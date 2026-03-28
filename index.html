@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Axiom AI</title>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 40px auto; }
+    textarea { width: 100%; height: 100px; }
+    button { margin-top: 10px; }
+    img { max-width: 100%; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<h2>Axiom AI</h2>
+
+<select id="model">
+  <option value="gpt-4.1">gpt-4.1</option>
+  <option value="gpt-4o">gpt-4o</option>
+  <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+</select>
+
+<textarea id="input" placeholder="Ask something..."></textarea>
+<br/>
+<button onclick="send()">Send</button>
+
+<hr/>
+
+<h3>Upload File</h3>
+<input type="file" id="fileInput" />
+<button onclick="uploadFile()">Upload</button>
+
+<hr/>
+
+<h3>Generate Image</h3>
+<input type="text" id="imagePrompt" placeholder="Describe image..." />
+<button onclick="generateImage()">Generate</button>
+<div id="imageResult"></div>
+
+<hr/>
+<h3>Response</h3>
+<pre id="output"></pre>
+
+<script>
+async function send() {
+  const model = document.getElementById("model").value;
+  const input = document.getElementById("input").value;
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: input }]
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("output").textContent =
+    data.choices?.[0]?.message?.content || "Error";
+}
+
+async function uploadFile() {
+  const file = document.getElementById("fileInput").files[0];
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+  document.getElementById("input").value += "\n\nFile content:\n" + data.content;
+}
+
+async function generateImage() {
+  const prompt = document.getElementById("imagePrompt").value;
+
+  const res = await fetch("/api/image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-image-1",
+      prompt
+    })
+  });
+
+  const data = await res.json();
+  const img = document.createElement("img");
+  img.src = "data:image/png;base64," + data.data[0].b64_json;
+  const container = document.getElementById("imageResult");
+  container.innerHTML = "";
+  container.appendChild(img);
+}
+</script>
+
+</body>
+</html>
