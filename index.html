@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXIOM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+:root {
+  --bg:#09090b; --sidebar:#0f0f11; --surface:#111113; --surface2:#1a1a1f; --surface3:#222228;
+  --border:#1e1e24; --border2:#2a2a34; --text:#ececf0; --text-muted:#5a5a6e; --text-dim:#2e2e3a;
+  --accent:#a78bfa; --accent2:#7c3aed; --accent3:#c4b5fd; --glow:rgba(124,58,237,0.18);
+  --green:#34d399; --red:#f87171; --user-bg:#13111f; --user-border:#27214a; --code-bg:#0d0d0f;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);display:flex}
+
+/* SIDEBAR */
+.sidebar{width:260px;min-width:260px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:width .2s,min-width .2s;overflow:hidden}
+.sidebar.collapsed{width:0;min-width:0}
+.sb-head{padding:20px 16px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo-icon{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 16px var(--glow);flex-shrink:0}
+.logo-name{font-family:'DM Serif Display',serif;font-size:17px;letter-spacing:.1em;white-space:nowrap}
+.logo-name span{color:var(--accent)}
+.new-btn{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-size:13px;font-family:'Instrument Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s;white-space:nowrap}
+.new-btn:hover{background:var(--surface3);border-color:var(--accent2)}
+.chat-list{flex:1;overflow-y:auto;padding:12px 8px}
+.chat-list::-webkit-scrollbar{width:3px}
+.chat-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.section-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);padding:8px 8px 4px;font-family:'DM Mono',monospace}
+.chat-item{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .12s;margin-bottom:2px;border:1px solid transparent;display:flex;align-items:center;gap:6px;position:relative}
+.chat-item:hover{background:var(--surface2);color:var(--text)}
+.chat-item.active{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.chat-item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-del{opacity:0;font-size:12px;flex-shrink:0;padding:2px 4px;border-radius:4px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:all .12s}
+.chat-item:hover .chat-del{opacity:1}
+.chat-del:hover{background:var(--surface3);color:var(--red)}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.sb-btn{width:100%;padding:8px 10px;background:transparent;border:none;border-radius:8px;color:var(--text-muted);font-size:12.5px;font-family:'Instrument Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .12s;text-align:left;white-space:nowrap}
+.sb-btn:hover{background:var(--surface2);color:var(--text)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+.model-sel{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;position:relative;white-space:nowrap;user-select:none}
+.model-sel:hover{border-color:var(--accent2);color:var(--text)}
+.mdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.model-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:6px;min-width:230px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);display:none}
+.model-dd.open{display:block}
+.model-opt{padding:10px 12px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--text-muted);transition:all .1s}
+.model-opt:hover{background:var(--surface3);color:var(--text)}
+.model-opt.active{color:var(--accent)}
+.opt-name{font-family:'DM Mono',monospace;font-size:12px}
+.opt-desc{font-size:11px;opacity:.6;margin-top:2px}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.conv-title{font-size:13px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+
+/* CHAT */
+.chat-scroll{flex:1;overflow-y:auto}
+.chat-scroll::-webkit-scrollbar{width:4px}
+.chat-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.chat-inner{max-width:760px;margin:0 auto;padding:32px 24px 24px;display:flex;flex-direction:column;gap:4px}
+
+.welcome{padding:60px 0 48px;text-align:center;animation:fadeUp .5s ease both}
+.welcome-glow{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--accent2),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 24px;box-shadow:0 0 60px var(--glow)}
+.welcome h1{font-family:'DM Serif Display',serif;font-size:36px;margin-bottom:10px;background:linear-gradient(135deg,var(--text),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{font-size:15px;color:var(--text-muted);line-height:1.65;max-width:420px;margin:0 auto 36px}
+.sug-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:540px;margin:0 auto}
+.sug{padding:14px 16px;border-radius:11px;border:1px solid var(--border);background:var(--surface);text-align:left;cursor:pointer;transition:all .15s;font-family:'Instrument Sans',sans-serif}
+.sug:hover{border-color:var(--accent2);background:var(--surface2);box-shadow:0 0 20px var(--glow)}
+.sug-icon{font-size:18px;margin-bottom:6px;display:block}
+.sug-text{font-size:13px;color:var(--text-muted);line-height:1.4}
+.sug:hover .sug-text{color:var(--text)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.msg{display:flex;gap:14px;padding:6px 0;animation:fadeUp .25s ease both}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;margin-top:2px}
+.avatar.ai{background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 0 14px var(--glow)}
+.avatar.human{background:var(--surface2);border:1px solid var(--border2);color:var(--text-muted);font-size:12px;font-family:'DM Mono',monospace}
+.msg-content{max-width:calc(100% - 56px)}
+.bubble{padding:13px 17px;border-radius:14px;font-size:14.5px;line-height:1.75}
+.msg.assistant .bubble{background:var(--surface);border:1px solid var(--border);border-radius:4px 14px 14px 14px}
+.msg.user .bubble{background:var(--user-bg);border:1px solid var(--user-border);border-radius:14px 4px 14px 14px}
+.bubble p{margin:0 0 10px}.bubble p:last-child{margin:0}
+.bubble h1,.bubble h2,.bubble h3{font-family:'DM Serif Display',serif;margin:16px 0 8px}
+.bubble h1{font-size:20px}.bubble h2{font-size:17px}.bubble h3{font-size:15px}
+.bubble ul,.bubble ol{padding-left:22px;margin:8px 0}.bubble li{margin-bottom:5px}
+.bubble code{font-family:'DM Mono',monospace;font-size:12.5px;background:var(--code-bg);padding:2px 6px;border-radius:4px;color:var(--accent3);border:1px solid var(--border)}
+.bubble pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:12px 0}
+.code-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)}
+.copy-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:3px 8px;font-size:10.5px;color:var(--text-muted);cursor:pointer;transition:all .15s;font-family:'Instrument Sans',sans-serif}
+.copy-btn:hover{color:var(--text);border-color:var(--accent2)}
+.bubble pre code{display:block;padding:14px;background:none;border:none;font-size:13px;line-height:1.6;overflow-x:auto}
+.bubble blockquote{border-left:3px solid var(--accent2);padding-left:14px;color:var(--text-muted);margin:10px 0;font-style:italic}
+.bubble table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+.bubble th{background:var(--surface2);border:1px solid var(--border2);padding:8px 12px;text-align:left;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)}
+.bubble td{border:1px solid var(--border);padding:8px 12px}
+.bubble tr:hover td{background:var(--surface2)}
+.bubble strong{color:var(--accent3);font-weight:600}.bubble em{color:var(--text-muted)}
+.bubble a{color:var(--accent);text-decoration:none}.bubble a:hover{text-decoration:underline}
+.bubble hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+/* Image in bubble */
+.bubble img{max-width:100%;border-radius:10px;margin:8px 0;display:block;border:1px solid var(--border)}
+.user-img{max-width:260px;border-radius:10px;margin-bottom:8px;display:block;border:1px solid var(--user-border)}
+
+/* Generated image */
+.gen-img-wrap{margin:8px 0}
+.gen-img-wrap img{max-width:100%;border-radius:12px;display:block;border:1px solid var(--border);cursor:pointer;transition:opacity .15s}
+.gen-img-wrap img:hover{opacity:.9}
+.gen-img-caption{font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'DM Mono',monospace}
+.dl-btn{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);color:var(--text-muted);font-size:12px;cursor:pointer;text-decoration:none;transition:all .12s;font-family:'Instrument Sans',sans-serif}
+.dl-btn:hover{color:var(--text);border-color:var(--accent2)}
+
+.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .15s}
+.msg:hover .msg-actions{opacity:1}
+.act-btn{padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px;font-family:'Instrument Sans',sans-serif;transition:all .12s}
+.act-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+
+.search-ind{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;padding:4px 0 8px;animation:fadeUp .2s ease both}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.typing-wrap{display:flex;gap:14px;padding:6px 0;animation:fadeUp .25s ease both}
+.typing-dots{background:var(--surface);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:16px 20px;display:flex;gap:5px;align-items:center}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:bounce 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-6px);opacity:1}}
+
+/* INPUT */
+.input-area{flex-shrink:0;padding:16px 24px 20px;border-top:1px solid var(--border)}
+.input-wrap{max-width:760px;margin:0 auto}
+.toolbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.tool-btn{padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;font-family:'Instrument Sans',sans-serif;white-space:nowrap}
+.tool-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.tool-btn.on{background:var(--surface2);color:var(--accent);border-color:var(--accent2)}
+
+/* Image preview in input */
+.img-preview-wrap{display:none;margin-bottom:8px;position:relative;width:fit-content}
+.img-preview-wrap.has-img{display:block}
+.img-preview{width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid var(--border2)}
+.img-preview-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+
+.input-box{display:flex;align-items:flex-end;gap:10px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:13px 14px;transition:all .2s}
+.input-box:focus-within{border-color:var(--accent2);box-shadow:0 0 0 3px var(--glow)}
+textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:14.5px;line-height:1.6;resize:none;max-height:180px;min-height:24px}
+textarea::placeholder{color:var(--text-dim)}
+.send-btn{width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all .15s;box-shadow:0 0 20px var(--glow)}
+.send-btn:hover{transform:scale(1.05)}.send-btn:active{transform:scale(.96)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.input-hint{font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.03em;margin-top:8px;text-align:center}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:40px;max-width:440px;width:90%;box-shadow:0 0 80px rgba(0,0,0,.6);animation:fadeUp .3s ease both}
+.modal-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent2),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:22px;box-shadow:0 0 40px var(--glow)}
+.modal h2{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:8px}
+.modal p{font-size:13.5px;color:var(--text-muted);line-height:1.65;margin-bottom:22px}
+.modal p a{color:var(--accent);text-decoration:none}
+.modal-label{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.modal-input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:14px;transition:border-color .2s}
+.modal-input:focus{border-color:var(--accent2)}
+.modal-input::placeholder{color:var(--text-dim)}
+.modal-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:11px;color:#fff;font-family:'Instrument Sans',sans-serif;font-size:14.5px;font-weight:500;cursor:pointer;transition:opacity .15s;box-shadow:0 0 24px var(--glow)}
+.modal-submit:hover{opacity:.9}
+.modal-err{color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:12px;display:none;font-family:'DM Mono',monospace}
+
+.search-link-btn{display:inline-flex;align-items:center;gap:6px;margin:4px 6px 4px 0;padding:9px 16px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;text-decoration:none;transition:all .15s;font-family:'Instrument Sans',sans-serif}
+.search-link-btn:hover{border-color:var(--accent2);background:var(--surface3);color:var(--accent3)}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:300;cursor:zoom-out}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 60px rgba(0,0,0,.8)}
+
+.img-search-link{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13.5px;text-decoration:none;transition:all .15s;font-family:'Instrument Sans',sans-serif}
+.img-search-link:hover{border-color:var(--accent2);background:var(--surface3);box-shadow:0 0 14px var(--glow)}
+@media(max-width:640px){.sidebar{display:none}.sug-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-icon">✦</div>
+    <h2>Welcome to Axiom</h2>
+    <p>Enter your free <a href="https://console.groq.com/keys" target="_blank">Groq API key</a> to get started. Image upload is supported — Axiom will analyze your images. For free AI image generation, enter your Cloudflare Worker URL below. No extra API key needed — Cloudflare provides 100 free images/day built-in.</p>
+    <div class="modal-label">Groq API Key</div>
+    <input class="modal-input" type="password" id="groqInput" placeholder="gsk_..." />
+    <div class="modal-label">Cloudflare Worker URL <span style="opacity:.5;font-weight:400">(optional, for image gen)</span></div>
+    <input class="modal-input" type="text" id="workerInput" placeholder="https://your-worker.workers.dev" />
+    <div class="modal-err" id="keyErr"></div>
+    <button class="modal-submit" onclick="saveKey()">Start chatting →</button>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <div class="logo-name">AXI<span>OM</span></div>
+    </div>
+    <button class="new-btn" onclick="newChat()"><span>+</span> New conversation</button>
+  </div>
+  <div class="chat-list" id="chatList"></div>
+  <div class="sb-foot">
+    <button class="sb-btn" onclick="openModal()">🔑 &nbsp;Change API keys</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+    <div class="model-sel" id="modelSel" onclick="toggleDD(event)">
+      <div class="mdot"></div>
+      <span id="modelLabel">llama-3.3-70b</span>
+      <span style="opacity:.4;font-size:10px">▾</span>
+      <div class="model-dd" id="modelDD"></div>
+    </div>
+    <span class="conv-title" id="convTitle"></span>
+    <div class="topbar-r">
+      <button class="icon-btn" onclick="newChat()" title="New chat">＋</button>
+    </div>
+  </div>
+
+  <div class="chat-scroll" id="chatScroll">
+    <div class="chat-inner" id="chatInner"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <div class="toolbar">
+        <button class="tool-btn" id="webBtn" onclick="toggleWeb()">🔍 Web search</button>
+        <button class="tool-btn" onclick="triggerImgUpload()" title="Add image — Axiom will analyze it">🖼 Add image</button>
+        <button class="tool-btn" id="genBtn" onclick="toggleImgGen()">🎨 Generate image</button>
+      </div>
+      <div class="img-preview-wrap" id="imgPreviewWrap">
+        <img class="img-preview" id="imgPreview" src="" alt="">
+        <button class="img-preview-del" onclick="clearImage()">✕</button>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImageFile(event)">
+      <div class="input-box">
+        <textarea id="userInput" placeholder="Ask me anything…" rows="1"
+          onkeydown="handleKey(event)" oninput="resize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
+      </div>
+      <div class="input-hint">ENTER to send · SHIFT+ENTER for newline</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var MODELS = [
+  { id:'llama-3.3-70b-versatile',      label:'llama-3.3-70b',    desc:'Smartest · Best for complex tasks' },
+  { id:'llama-3.1-8b-instant',         label:'llama-3.1-8b',     desc:'Fastest · Great for quick answers' },
+  { id:'llama-3.2-11b-vision-preview', label:'llama-3.2-vision', desc:'Vision · Can see images 👁' },
+  { id:'gemma2-9b-it',                 label:'gemma2-9b',        desc:'Google · Balanced' }
+];
+var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+var SYSTEM = 'You are Axiom, a world-class AI assistant — brilliant, helpful, precise, and thoughtful.\n- Give thorough, accurate, well-structured responses\n- Use markdown formatting where helpful\n- For code blocks always specify the language\n- Be direct and confident';
+
+// STATE
+var groqKey   = localStorage.getItem('ax_groq') || '';
+var workerUrl = localStorage.getItem('ax_worker') || '';
+
+var curModel  = localStorage.getItem('ax_model') || MODELS[0].id;
+var imgGenOn  = false;
+var webSearch = false;
+var pendingImg = null; // { dataUrl, base64, mimeType }
+
+// Conversations: array of { id, title, history }
+var conversations = JSON.parse(localStorage.getItem('ax_convos') || '[]');
+var curConvoId = null;
+
+var isLoading = false;
+
+// INIT
+buildModelDD();
+if (conversations.length === 0) newChat(true);
+else loadConvo(conversations[0].id);
+
+if (groqKey) {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('userInput').focus();
+}
+
+document.getElementById('groqInput').addEventListener('keydown', function(e){ if(e.key==='Enter') saveKey(); });
+document.addEventListener('click', function(e){
+  if (!document.getElementById('modelSel').contains(e.target))
+    document.getElementById('modelDD').classList.remove('open');
+});
+
+// MODAL
+function saveKey() {
+  var g = document.getElementById('groqInput').value.trim();
+  if (!g.startsWith('gsk_')) {
+    var err = document.getElementById('keyErr');
+    err.textContent = 'Groq key must start with gsk_';
+    err.style.display = 'block';
+    return;
+  }
+  groqKey = g;
+  localStorage.setItem('ax_groq', groqKey);
+
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('userInput').focus();
+}
+function openModal() {
+  document.getElementById('groqInput').value = groqKey;
+  document.getElementById('workerInput').value = workerUrl;
+  document.getElementById('keyErr').style.display = 'none';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// MODEL DROPDOWN
+function buildModelDD() {
+  var dd = document.getElementById('modelDD');
+  dd.innerHTML = '';
+  MODELS.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'model-opt' + (m.id === curModel ? ' active' : '');
+    div.innerHTML = '<div class="opt-name">' + m.label + '</div><div class="opt-desc">' + m.desc + '</div>';
+    div.addEventListener('click', function(e) {
+      e.stopPropagation();
+      curModel = m.id;
+      localStorage.setItem('ax_model', curModel);
+      document.getElementById('modelLabel').textContent = m.label;
+      document.querySelectorAll('.model-opt').forEach(function(o){ o.classList.remove('active'); });
+      div.classList.add('active');
+      document.getElementById('modelDD').classList.remove('open');
+    });
+    dd.appendChild(div);
+  });
+  var found = MODELS.find(function(m){ return m.id === curModel; }) || MODELS[0];
+  document.getElementById('modelLabel').textContent = found.label;
+}
+function toggleDD(e) { e.stopPropagation(); document.getElementById('modelDD').classList.toggle('open'); }
+
+// SIDEBAR / CONVERSATIONS
+var sidebarOpen = true;
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+}
+
+function saveConvos() { localStorage.setItem('ax_convos', JSON.stringify(conversations)); }
+
+function getConvo(id) {
+  return conversations.find(function(c){ return c.id === id; });
+}
+
+function newChat(silent) {
+  var id = 'c' + Date.now();
+  var convo = { id: id, title: 'New conversation', history: [{ role:'system', content:SYSTEM }] };
+  conversations.unshift(convo);
+  saveConvos();
+  loadConvo(id);
+  if (!silent) document.getElementById('userInput').focus();
+}
+
+function loadConvo(id) {
+  curConvoId = id;
+  var convo = getConvo(id);
+  if (!convo) return;
+  renderChatList();
+  renderMessages(convo);
+  document.getElementById('convTitle').textContent = convo.title === 'New conversation' ? '' : convo.title;
+}
+
+function deleteConvo(id, e) {
+  e.stopPropagation();
+  conversations = conversations.filter(function(c){ return c.id !== id; });
+  saveConvos();
+  if (curConvoId === id) {
+    if (conversations.length === 0) newChat(true);
+    else loadConvo(conversations[0].id);
+  } else {
+    renderChatList();
+  }
+}
+
+function renderChatList() {
+  var list = document.getElementById('chatList');
+  list.innerHTML = '<div class="section-label">Conversations</div>';
+  conversations.forEach(function(c) {
+    var div = document.createElement('div');
+    div.className = 'chat-item' + (c.id === curConvoId ? ' active' : '');
+    div.innerHTML = '<span class="chat-item-title">' + escHtml(c.title) + '</span><button class="chat-del" title="Delete">✕</button>';
+    div.querySelector('.chat-del').addEventListener('click', function(e){ deleteConvo(c.id, e); });
+    div.addEventListener('click', function(){ loadConvo(c.id); });
+    list.appendChild(div);
+  });
+}
+
+function updateConvoTitle(id, firstMsg) {
+  var convo = getConvo(id);
+  if (!convo) return;
+  convo.title = firstMsg.slice(0, 40) + (firstMsg.length > 40 ? '…' : '');
+  document.getElementById('convTitle').textContent = convo.title;
+  saveConvos();
+  renderChatList();
+}
+
+// RENDER MESSAGES from history
+function renderMessages(convo) {
+  var inner = document.getElementById('chatInner');
+  inner.innerHTML = '';
+  var msgs = convo.history.filter(function(m){ return m.role !== 'system'; });
+  if (msgs.length === 0) { showWelcome(); return; }
+  msgs.forEach(function(m) {
+    if (m.role === 'user') {
+      addUserBubble(m.displayText || (typeof m.content === 'string' ? m.content : ''), m.imgSrc || null, true);
+    } else {
+      addAssistantBubble(m.content, true);
+    }
+  });
+  scrollBottom();
+}
+
+// WELCOME
+function showWelcome() {
+  document.getElementById('chatInner').innerHTML =
+    '<div class="welcome" id="welcome">' +
+    '<div class="welcome-glow">✦</div>' +
+    '<h1>Hello, I\'m Axiom.</h1>' +
+    '<p>Your intelligent AI assistant. Chat, analyze images, and generate art — all in one place.</p>' +
+    '<div class="sug-grid">' +
+    '<button class="sug" onclick="useSug(this)"><span class="sug-icon">🧠</span><span class="sug-text">Explain a complex topic simply</span></button>' +
+    '<button class="sug" onclick="useSug(this)"><span class="sug-icon">💻</span><span class="sug-text">Help me debug or write code</span></button>' +
+    '<button class="sug" onclick="useSug(this)"><span class="sug-icon">✍️</span><span class="sug-text">Write or improve my writing</span></button>' +
+    '<button class="sug" onclick="useSug(this)"><span class="sug-icon">🎨</span><span class="sug-text">Generate an image for me</span></button>' +
+    '</div></div>';
+}
+function hideWelcome() { var w = document.getElementById('welcome'); if(w) w.remove(); }
+function useSug(btn) {
+  var t = btn.querySelector('.sug-text').textContent;
+  if (t.indexOf('Generate') !== -1) {
+    document.getElementById('userInput').value = 'A beautiful cosmic nebula with purple and blue colors';
+    imgGenOn = true;
+    document.getElementById('genBtn').classList.add('on');
+  } else {
+    document.getElementById('userInput').value = t;
+  }
+  send();
+}
+
+// IMAGE UPLOAD
+function triggerImgUpload() { document.getElementById('fileInput').click(); }
+function handleImageFile(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    var base64 = dataUrl.split(',')[1];
+    var mimeType = file.type;
+    pendingImg = { dataUrl: dataUrl, base64: base64, mimeType: mimeType };
+    document.getElementById('imgPreview').src = dataUrl;
+    document.getElementById('imgPreviewWrap').classList.add('has-img');
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+function clearImage() {
+  pendingImg = null;
+  document.getElementById('imgPreviewWrap').classList.remove('has-img');
+  document.getElementById('imgPreview').src = '';
+}
+
+// IMAGE GENERATION
+function toggleImgGen() {
+  imgGenOn = !imgGenOn;
+  document.getElementById('genBtn').classList.toggle('on', imgGenOn);
+  if (imgGenOn) document.getElementById('userInput').placeholder = workerUrl ? 'Describe the image you want to generate…' : 'Describe what to search for…';
+  else document.getElementById('userInput').placeholder = 'Ask me anything…';
+}
+
+async function describeImage(base64, mimeType) {
+  // Use Groq's vision model to describe the image
+  var payload = {
+    model: 'llama-3.2-11b-vision-preview',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64 } },
+        { type: 'text', text: 'Describe this image in detail. Cover: what is shown, colors, objects, people, text, mood, and any other relevant details. Be thorough but concise.' }
+      ]
+    }],
+    max_tokens: 500
+  };
+  try {
+    var res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqKey },
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if (data.error) return 'Could not analyze image: ' + data.error.message;
+    return data.choices[0].message.content;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function generateImage(prompt) {
+  // If no worker URL, fall back to search links
+  if (!workerUrl) {
+    return {
+      links: [
+        { label: '🔍 Google Images', url: 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(prompt) },
+        { label: '🎨 Unsplash', url: 'https://unsplash.com/s/photos/' + encodeURIComponent(prompt) }
+      ],
+      prompt: prompt
+    };
+  }
+  try {
+    var res = await fetch(workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+    var data = await res.json();
+    if (data.error) return { error: data.error, prompt: prompt };
+    // data.image is base64
+    var imgUrl = 'data:image/png;base64,' + data.image;
+    return { imgUrl: imgUrl, prompt: prompt };
+  } catch(e) {
+    return { error: e.message, prompt: prompt };
+  }
+}
+
+// WEB SEARCH
+function toggleWeb() {
+  webSearch = !webSearch;
+  document.getElementById('webBtn').classList.toggle('on', webSearch);
+}
+async function fetchWebCtx(query) {
+  try {
+    var r = await fetch('https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1');
+    var d = await r.json();
+    var ctx = '';
+    if (d.AbstractText) ctx += 'Summary: ' + d.AbstractText + '\n';
+    if (d.RelatedTopics && d.RelatedTopics.length) {
+      ctx += 'Related:\n';
+      d.RelatedTopics.slice(0,5).forEach(function(t){ if(t.Text) ctx += '- ' + t.Text + '\n'; });
+    }
+    return ctx || null;
+  } catch(e) { return null; }
+}
+
+// INPUT
+function resize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,180)+'px'; }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
+function scrollBottom() { var s=document.getElementById('chatScroll'); s.scrollTop=s.scrollHeight; }
+function escHtml(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// MARKDOWN
+function renderMD(text) {
+  marked.setOptions({ breaks:true, gfm:true });
+  var html = marked.parse(text);
+  html = html.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, function(_,lang,code){
+    var id='c'+Math.random().toString(36).slice(2);
+    return '<pre><div class="code-hdr"><span>'+lang+'</span><button class="copy-btn" onclick="copyCode(\''+id+'\')">Copy</button></div><code id="'+id+'" class="hljs language-'+lang+'">'+code+'</code></pre>';
+  });
+  html = html.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, function(_,code){
+    var id='c'+Math.random().toString(36).slice(2);
+    return '<pre><div class="code-hdr"><span>code</span><button class="copy-btn" onclick="copyCode(\''+id+'\')">Copy</button></div><code id="'+id+'">'+code+'</code></pre>';
+  });
+  return html;
+}
+function copyCode(id) {
+  var el=document.getElementById(id); if(!el) return;
+  navigator.clipboard.writeText(el.innerText).then(function(){
+    var btn=el.closest('pre').querySelector('.copy-btn');
+    btn.textContent='Copied!'; setTimeout(function(){btn.textContent='Copy';},2000);
+  });
+}
+
+// ADD MESSAGES
+function addUserBubble(text, imgSrc, noAnim) {
+  hideWelcome();
+  var div = document.createElement('div');
+  div.className = 'msg user' + (noAnim ? '' : '');
+  var imgHtml = imgSrc ? '<img class="user-img" src="'+imgSrc+'" alt="uploaded image">' : '';
+  div.innerHTML = '<div class="avatar human">U</div><div class="msg-content"><div class="bubble">'+imgHtml+escHtml(text).replace(/\n/g,'<br>')+'</div></div>';
+  document.getElementById('chatInner').appendChild(div);
+  if (!noAnim) scrollBottom();
+}
+
+function addAssistantBubble(text, noAnim) {
+  hideWelcome();
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  var bid = 'b'+Date.now()+Math.random().toString(36).slice(2);
+  var aid = 'a'+Date.now()+Math.random().toString(36).slice(2);
+  div.innerHTML = '<div class="avatar ai">✦</div><div class="msg-content"><div class="bubble" id="'+bid+'">'+renderMD(text)+'</div><div class="msg-actions" id="'+aid+'"></div></div>';
+  document.getElementById('chatInner').appendChild(div);
+  var enc = encodeURIComponent(text);
+  document.getElementById(aid).innerHTML = '<button class="act-btn" onclick="copyMsg(this,\''+enc+'\')">⎘ Copy</button>';
+  if (!noAnim) scrollBottom();
+  return document.getElementById(bid);
+}
+
+function addStreamBubble() {
+  hideWelcome();
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  var bid = 'b'+Date.now()+Math.random().toString(36).slice(2);
+  var aid = 'a'+Date.now()+Math.random().toString(36).slice(2);
+  div.innerHTML = '<div class="avatar ai">✦</div><div class="msg-content"><div class="bubble" id="'+bid+'"><span style="opacity:.4">▍</span></div><div class="msg-actions" id="'+aid+'"></div></div>';
+  document.getElementById('chatInner').appendChild(div);
+  scrollBottom();
+  return { bubble:document.getElementById(bid), actions:document.getElementById(aid) };
+}
+
+function addImageBubble(url, prompt) {
+  hideWelcome();
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  var fname = 'axiom-' + Date.now() + '.png';
+  div.innerHTML = '<div class="avatar ai">✦</div><div class="msg-content"><div class="bubble"><div class="gen-img-wrap"><img src="'+url+'" alt="'+escHtml(prompt)+'" onclick="openLightbox(\''+url+'\')" title="Click to enlarge"><div class="gen-img-caption">'+escHtml(prompt)+'</div><a class="dl-btn" href="'+url+'" download="'+fname+'">⬇ Download</a></div></div></div>';
+  document.getElementById('chatInner').appendChild(div);
+  scrollBottom();
+}
+
+function addErrorBubble(msg) {
+  hideWelcome();
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = '<div class="avatar ai">✦</div><div class="msg-content"><div class="bubble"><span style="color:var(--red)">'+escHtml(msg)+'</span></div></div>';
+  document.getElementById('chatInner').appendChild(div);
+  scrollBottom();
+}
+
+function showTyping() {
+  hideWelcome();
+  var div=document.createElement('div'); div.className='typing-wrap'; div.id='typing';
+  div.innerHTML='<div class="avatar ai">✦</div><div class="typing-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('chatInner').appendChild(div); scrollBottom();
+}
+function hideTyping() { var el=document.getElementById('typing'); if(el) el.remove(); }
+function showSearching() {
+  hideWelcome();
+  var div=document.createElement('div'); div.className='search-ind'; div.id='searching';
+  div.innerHTML='<div class="spin"></div> Searching the web…';
+  document.getElementById('chatInner').appendChild(div); scrollBottom();
+}
+function hideSearching() { var el=document.getElementById('searching'); if(el) el.remove(); }
+function showAnalyzing() {
+  hideWelcome();
+  var div=document.createElement('div'); div.className='search-ind'; div.id='analyzing';
+  div.innerHTML='<div class="spin"></div> Analyzing image…';
+  document.getElementById('chatInner').appendChild(div); scrollBottom();
+}
+function hideAnalyzing() { var el=document.getElementById('analyzing'); if(el) el.remove(); }
+function showGenerating() {
+  hideWelcome();
+  var div=document.createElement('div'); div.className='search-ind'; div.id='generating';
+  div.innerHTML='<div class="spin"></div> Generating image with FLUX… (may take ~10s)';
+  document.getElementById('chatInner').appendChild(div); scrollBottom();
+}
+function hideGenerating() { var el=document.getElementById('generating'); if(el) el.remove(); }
+
+// LIGHTBOX
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+// COPY
+function copyMsg(btn, encoded) {
+  navigator.clipboard.writeText(decodeURIComponent(encoded)).then(function(){
+    btn.textContent='✓ Copied'; setTimeout(function(){btn.textContent='⎘ Copy';},2000);
+  });
+}
+
+// SEND
+async function send(text) {
+  var input = document.getElementById('userInput');
+  var msg = (text || input.value).trim();
+  if (!msg || isLoading) return;
+
+  var convo = getConvo(curConvoId);
+  if (!convo) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  // Update title on first real message
+  var userMsgs = convo.history.filter(function(m){ return m.role==='user'; });
+  if (userMsgs.length === 0) updateConvoTitle(curConvoId, msg);
+
+  // ── IMAGE GENERATION MODE ──
+  if (imgGenOn) {
+    addUserBubble(msg, null, false);
+    convo.history.push({ role:'user', content:msg, displayText:msg });
+    saveConvos();
+    showTyping();
+    hideTyping();
+    showGenerating();
+    var result = await generateImage(msg);
+    hideGenerating();
+    if (result.imgUrl) {
+      addGeneratedImageBubble(result.imgUrl, result.prompt);
+      convo.history.push({ role:'assistant', content:'[Generated image for: ' + msg + ']' });
+    } else if (result.links) {
+      addSearchBubble(result.links, result.prompt);
+      convo.history.push({ role:'assistant', content:'[Image search links for: ' + msg + ']' });
+    } else {
+      addErrorBubble('Image generation failed: ' + (result.error || 'Unknown error'));
+      convo.history.pop();
+    }
+    saveConvos();
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+    return;
+  }
+
+  // ── CHAT MODE ──
+  var imgSrc = pendingImg ? pendingImg.dataUrl : null;
+  addUserBubble(msg, imgSrc, false);
+
+  // Build content for API
+  var userContent;
+  if (pendingImg) {
+    // Show analyzing indicator
+    showAnalyzing();
+    var description = await describeImage(pendingImg.base64, pendingImg.mimeType);
+    hideAnalyzing();
+    if (description) {
+      userContent = 'The user has shared an image. Here is a detailed description of it:\n\n' + description + '\n\nUser\'s message: ' + msg;
+    } else {
+      userContent = '[User attached an image - could not analyze] ' + msg;
+    }
+  } else {
+    userContent = msg;
+  }
+
+  // Web search
+  if (webSearch && !pendingImg) {
+    showSearching();
+    var ctx = await fetchWebCtx(msg);
+    hideSearching();
+    if (ctx) userContent = 'User question: ' + msg + '\n\nWeb search context:\n' + ctx;
+  }
+
+  convo.history.push({ role:'user', content:userContent, displayText:msg, imgSrc:imgSrc });
+  clearImage();
+  saveConvos();
+  showTyping();
+
+  // Build messages for API (strip display-only fields)
+  var apiMessages = convo.history.map(function(m){
+    return { role:m.role, content:m.content };
+  });
+
+  try {
+    var res = await fetch(GROQ_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+groqKey },
+      body: JSON.stringify({ model:curModel, messages:apiMessages, stream:true, max_tokens:2048, temperature:0.7 })
+    });
+
+    hideTyping();
+
+    if (!res.ok) {
+      var ed = await res.json().catch(function(){ return {}; });
+      var em = (ed.error && ed.error.message) ? ed.error.message : 'HTTP '+res.status;
+      addErrorBubble('Error: ' + em);
+      convo.history.pop();
+      saveConvos();
+      isLoading = false;
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    var parts = addStreamBubble();
+    var fullText = '';
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, { stream:true });
+      var lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (var i=0; i<lines.length; i++) {
+        var line = lines[i];
+        if (!line.startsWith('data: ')) continue;
+        var data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          var parsed = JSON.parse(data);
+          var token = parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content;
+          if (token) {
+            fullText += token;
+            parts.bubble.innerHTML = renderMD(fullText) + '<span style="opacity:.4">▍</span>';
+            scrollBottom();
+          }
+        } catch(e) {}
+      }
+    }
+
+    parts.bubble.innerHTML = renderMD(fullText);
+    var enc = encodeURIComponent(fullText);
+    parts.actions.innerHTML = '<button class="act-btn" onclick="copyMsg(this,\''+enc+'\')">⎘ Copy</button>';
+    convo.history.push({ role:'assistant', content:fullText });
+    saveConvos();
+
+  } catch(err) {
+    hideTyping();
+    addErrorBubble('Connection error. Check your network and API key.');
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
