@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neil's AI Command Center</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#151311;
+  --panel:#211e1a;
+  --panel-2:#2b261f;
+  --line:#3e372f;
+  --text:#f7efe6;
+  --muted:#bdb1a5;
+  --soft:#86786c;
+  --ember:#df7b45;
+  --ember-2:#f2a15f;
+  --gold:#e4bd6d;
+  --green:#89c995;
+  --shadow:0 28px 90px rgba(0,0,0,.44);
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 18% -8%, rgba(223,123,69,.22), transparent 32%),
+    radial-gradient(circle at 88% 4%, rgba(228,189,109,.15), transparent 28%),
+    linear-gradient(145deg,#171512,#11100e 48%,#211b16);
+}
+a,button{font:inherit}
+.shell{min-height:100vh;display:grid;grid-template-columns:292px minmax(0,1fr)}
+.sidebar{
+  position:sticky;top:0;height:100vh;border-right:1px solid var(--line);
+  background:rgba(25,23,20,.86);backdrop-filter:blur(18px);
+  padding:20px;display:flex;flex-direction:column;gap:18px;
+}
+.brand{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.mark{
+  width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
+  background:conic-gradient(from 28deg,var(--ember),var(--gold),#fff2c9,var(--ember));
+  color:#241308;font-weight:950;box-shadow:0 0 34px rgba(223,123,69,.28);
+}
+.brand h1{margin:0;font-size:18px;letter-spacing:0}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:7px}
+.nav a{
+  color:var(--muted);text-decoration:none;border:1px solid transparent;border-radius:11px;
+  padding:10px 11px;display:flex;align-items:center;gap:10px;
+}
+.nav a:hover,.nav a.active{background:var(--panel-2);border-color:var(--line);color:var(--text)}
+.side-card{
+  margin-top:auto;border:1px solid var(--line);border-radius:18px;
+  background:linear-gradient(180deg,#2a251f,#1c1916);padding:16px;box-shadow:var(--shadow);
+}
+.side-card h2{font-size:15px;margin:0 0 8px}
+.side-card p{color:var(--muted);font-size:13px;line-height:1.5;margin:0}
+.side-card a{display:block;margin-top:12px;color:#241308;background:linear-gradient(135deg,var(--ember),var(--ember-2));text-decoration:none;border-radius:10px;padding:10px 12px;text-align:center;font-weight:850}
+.main{padding:28px 36px 44px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+.crumb{color:var(--muted);font-size:14px}
+.pill{border:1px solid var(--line);background:rgba(43,38,31,.72);border-radius:999px;color:var(--muted);padding:9px 12px;font-size:13px}
+.hero{
+  border:1px solid var(--line);border-radius:28px;min-height:330px;padding:34px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.045),transparent 36%),
+    linear-gradient(160deg,#2a241e,#171512);
+  box-shadow:var(--shadow);
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:28px;align-items:center;
+}
+.eyebrow{color:var(--ember-2);font-size:13px;font-weight:850;text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px}
+.hero h2{font-size:clamp(40px,6vw,78px);line-height:.95;letter-spacing:0;margin:0 0 18px}
+.hero p{font-size:18px;line-height:1.6;color:var(--muted);margin:0;max-width:760px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.btn{
+  border-radius:12px;padding:12px 15px;text-decoration:none;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel-2);color:var(--text);
+}
+.btn.primary{border:0;background:linear-gradient(135deg,var(--ember),var(--ember-2));color:#241308;font-weight:900}
+.stack{display:grid;gap:10px}
+.stack-item{border:1px solid var(--line);border-radius:16px;background:rgba(33,30,26,.72);padding:14px;display:flex;gap:12px;align-items:flex-start}
+.stack-dot{width:12px;height:12px;border-radius:999px;background:var(--green);margin-top:5px;box-shadow:0 0 0 5px rgba(137,201,149,.08)}
+.stack-title{font-weight:850}
+.stack-sub{color:var(--muted);font-size:13px;line-height:1.45;margin-top:3px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:32px 0 14px}
+.section-head h3{font-size:23px;margin:0}
+.section-head p{margin:5px 0 0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.app-card{
+  min-height:286px;border:1px solid var(--line);border-radius:20px;overflow:hidden;
+  background:rgba(33,30,26,.82);display:flex;flex-direction:column;box-shadow:0 16px 50px rgba(0,0,0,.22);
+}
+.app-top{height:7px;background:var(--tone)}
+.app-body{padding:18px;display:flex;flex-direction:column;gap:14px;flex:1}
+.app-title{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.app-title h4{font-size:22px;margin:0}
+.badge{font-size:12px;color:#241308;background:var(--tone);border-radius:999px;padding:6px 8px;font-weight:850}
+.app-card p{color:var(--muted);line-height:1.55;font-size:14px;margin:0}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto}
+.tag{font-size:12px;color:var(--muted);border:1px solid var(--line);background:#28241f;border-radius:999px;padding:6px 8px}
+.card-actions{display:flex;gap:10px}
+.card-actions a{flex:1;text-align:center;text-decoration:none;border-radius:11px;padding:11px}
+.launch{background:var(--tone);color:#241308;font-weight:900}
+.newtab{border:1px solid var(--line);color:var(--text);background:#28241f}
+.info-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.info{
+  border:1px solid var(--line);background:rgba(33,30,26,.78);border-radius:20px;padding:20px;
+}
+.info h4{font-size:17px;margin:0 0 10px}
+.info p,.info li{color:var(--muted);font-size:14px;line-height:1.6}
+.info ol,.info ul{margin:0;padding-left:20px}
+.info a{color:var(--ember-2)}
+@media(max-width:1050px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .main{padding:22px}
+  .hero,.grid,.info-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">AI</div>
+      <div>
+        <h1>Neil's AI Command Center</h1>
+        <p>Master portal: all access</p>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Master navigation">
+      <a class="active" href="#launchpad"><span>⌂</span>Launchpad</a>
+      <a href="LlamaAI.html"><span>◌</span>Llama AI</a>
+      <a href="NexusAI-3-fixed-v4.html"><span>✦</span>Nexus AI</a>
+      <a href="BoundlessAI.html"><span>◇</span>Boundless AI</a>
+      <a href="LlamaAI-Gateway.html"><span>⏱</span>Normal Portal</a>
+    </nav>
+    <div class="side-card">
+      <h2>Need the normal version?</h2>
+      <p>The normal portal starts with Llama and unlocks stronger AIs over time. This master portal always shows everything.</p>
+      <a href="LlamaAI-Gateway.html">Open Normal Portal</a>
+    </div>
+  </aside>
+
+  <main class="main" id="launchpad">
+    <div class="topbar">
+      <div class="crumb">Master portal / unrestricted AI suite</div>
+      <div class="pill">All assistants unlocked</div>
+    </div>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Full access launchpad</div>
+        <h2>Run the right AI for the job.</h2>
+        <p>Open Llama for fast everyday chat, Nexus for stronger reasoning and vision workflows, or Boundless for artifact creation, file editing, and advanced project work.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="BoundlessAI.html">Launch Boundless</a>
+          <a class="btn" href="LlamaAI-Gateway.html">Try Normal Portal</a>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="stack-item"><div class="stack-dot"></div><div><div class="stack-title">Llama AI</div><div class="stack-sub">Fast starter assistant with Groq chat, memory, and image generation.</div></div></div>
+        <div class="stack-item"><div class="stack-dot"></div><div><div class="stack-title">Nexus AI</div><div class="stack-sub">A more capable assistant for vision, model fallback, and Mixture-of-Agents reasoning.</div></div></div>
+        <div class="stack-item"><div class="stack-dot"></div><div><div class="stack-title">Boundless AI</div><div class="stack-sub">The premium workspace for artifacts, file edits, previews, and deeper builds.</div></div></div>
+      </div>
+    </section>
+
+    <div class="section-head">
+      <div>
+        <h3>Choose Your Assistant</h3>
+        <p>The master portal never locks apps. Pick whichever assistant fits the task.</p>
+      </div>
+    </div>
+    <section class="grid" id="appGrid"></section>
+
+    <div class="section-head">
+      <div>
+        <h3>Setup Help</h3>
+        <p>Each AI uses your Groq API key from its settings panel.</p>
+      </div>
+    </div>
+    <section class="info-grid">
+      <div class="info">
+        <h4>How to get a Groq API key</h4>
+        <ol>
+          <li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> and sign in or create a Groq account.</li>
+          <li>Create a new API key and copy it.</li>
+          <li>Open one of the AIs, go to Settings, paste the key into the Groq API key field, and save.</li>
+          <li>If models do not load, refresh the AI page and check that the key was copied completely.</li>
+        </ol>
+      </div>
+      <div class="info">
+        <h4>Which one should I use?</h4>
+        <ul>
+          <li>Use Llama for quick answers and lightweight chats.</li>
+          <li>Use Nexus when images, fallback reliability, or multi-agent reasoning matter.</li>
+          <li>Use Boundless when you want files, artifacts, previews, or editable generated code.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const AI_APPS = [
+  { name:'Llama AI', file:'LlamaAI.html', tone:'#df7b45', badge:'Starter', summary:'A fast and focused AI for everyday questions, drafts, code snippets, memory-backed chat, and quick image generation.', tags:['Fast chat','Memory','Groq'] },
+  { name:'Nexus AI', file:'NexusAI-3-fixed-v4.html', tone:'#e4bd6d', badge:'Power', summary:'A stronger assistant with model fallback, multimodal image understanding, better attachment handling, and MoA reasoning.', tags:['Vision','MoA','Fallbacks'] },
+  { name:'Boundless AI', file:'BoundlessAI.html', tone:'#89c995', badge:'Advanced', summary:'The most capable workspace for building artifacts, editing supplied files, previewing code, and handling complex project work.', tags:['Artifacts','File editing','Preview'] }
+];
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+document.getElementById('appGrid').innerHTML = AI_APPS.map(app => `
+  <article class="app-card" style="--tone:${app.tone}">
+    <div class="app-top"></div>
+    <div class="app-body">
+      <div class="app-title">
+        <h4>${escapeHtml(app.name)}</h4>
+        <span class="badge">${escapeHtml(app.badge)}</span>
+      </div>
+      <p>${escapeHtml(app.summary)}</p>
+      <div class="tags">${app.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
+      <div class="card-actions">
+        <a class="launch" href="${app.file}">Launch</a>
+        <a class="newtab" href="${app.file}" target="_blank" rel="noopener">New tab</a>
+      </div>
+    </div>
+  </article>
+`).join('');
+</script>
+</body>
+</html>

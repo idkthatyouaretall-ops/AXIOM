@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Llama Progress Portal</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#151311;
+  --rail:#1d1a17;
+  --panel:#25211d;
+  --panel-2:#2f2922;
+  --line:#40372e;
+  --text:#f7efe6;
+  --muted:#bdb1a5;
+  --soft:#86786b;
+  --ember:#df7b45;
+  --ember-2:#f2a15f;
+  --gold:#e4bd6d;
+  --green:#89c995;
+  --red:#ef746f;
+  --shadow:0 28px 90px rgba(0,0,0,.44);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 16% -8%, rgba(223,123,69,.22), transparent 30%),
+    radial-gradient(circle at 92% 4%, rgba(228,189,109,.13), transparent 28%),
+    linear-gradient(145deg,#161410,#100f0d);
+  overflow:hidden;
+}
+a,button{font:inherit}
+.shell{height:100%;display:grid;grid-template-rows:82px minmax(0,1fr)}
+.top{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:15px 18px;border-bottom:1px solid var(--line);
+  background:rgba(25,23,20,.9);backdrop-filter:blur(18px);
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:250px}
+.mark{
+  width:48px;height:48px;border-radius:16px;display:grid;place-items:center;
+  background:conic-gradient(from 28deg,var(--ember),var(--gold),#fff2c9,var(--ember));
+  color:#241308;font-weight:950;box-shadow:0 0 34px rgba(223,123,69,.28);
+}
+.brand h1{font-size:18px;margin:0;letter-spacing:0}
+.brand p{font-size:12px;color:var(--muted);margin:3px 0 0}
+.tabs{
+  display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);
+  padding:5px;border-radius:15px;min-width:0;
+}
+.tab{
+  border:0;background:transparent;color:var(--muted);border-radius:11px;
+  padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;
+  min-width:126px;justify-content:center;position:relative;
+}
+.tab.active{background:var(--ember);color:#241308;font-weight:900}
+.tab.locked{opacity:.56}
+.tab.locked:hover{color:var(--text)}
+.lock{font-size:12px}
+.tools{display:flex;align-items:center;gap:10px}
+.tool-btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:12px;padding:10px 12px;cursor:pointer;text-decoration:none;
+}
+.tool-btn:hover{border-color:var(--ember)}
+.tool-btn.primary{background:linear-gradient(135deg,var(--ember),var(--ember-2));color:#241308;border:0;font-weight:900}
+.workspace{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 360px}
+.frame-wrap{min-width:0;position:relative;background:#0e0d0c}
+.frame-head{
+  position:absolute;z-index:3;top:16px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(30,28,24,.84);backdrop-filter:blur(14px);border-radius:999px;
+  padding:8px 13px;box-shadow:0 12px 38px rgba(0,0,0,.32);pointer-events:none;
+}
+.pulse{
+  width:18px;height:18px;border-radius:999px;
+  background:repeating-conic-gradient(from 0deg,var(--ember) 0deg 18deg,transparent 18deg 36deg);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.frame-title{font-size:13px;color:var(--muted)}
+iframe{width:100%;height:100%;border:0;background:#111}
+.side{
+  border-left:1px solid var(--line);background:rgba(29,26,23,.94);
+  padding:18px;display:flex;flex-direction:column;gap:14px;overflow:auto;
+}
+.card{
+  border:1px solid var(--line);background:linear-gradient(180deg,#29241f,#1d1a17);
+  border-radius:18px;padding:16px;box-shadow:var(--shadow);
+}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);font-weight:850}
+.time{font-size:36px;font-weight:900;margin:5px 0 2px}
+.sub{color:var(--muted);font-size:13px;line-height:1.5;margin:0}
+.bar{height:10px;background:#39322b;border-radius:999px;overflow:hidden;margin:14px 0}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--gold));border-radius:inherit;transition:width .35s}
+.tier-list{display:grid;gap:9px}
+.tier{
+  border:1px solid var(--line);background:#211e1a;border-radius:14px;padding:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.tier.current{border-color:rgba(223,123,69,.85);background:rgba(223,123,69,.11)}
+.tier.unlocked .status{background:var(--green)}
+.tier.locked .status{background:var(--soft)}
+.status{width:10px;height:10px;border-radius:999px;box-shadow:0 0 0 5px rgba(255,255,255,.04)}
+.tier-name{font-weight:850;font-size:14px}
+.tier-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.hint h2{font-size:18px;margin:0 0 8px}
+.hint p,.hint li{color:var(--muted);font-size:14px;line-height:1.55}
+.hint p{margin:0}
+.hint ol{margin:0;padding-left:20px}
+.hint a{color:var(--ember-2)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick button{
+  border:1px solid var(--line);background:#211e1a;color:var(--text);
+  border-radius:11px;padding:10px;text-align:center;cursor:pointer;
+}
+.quick button:hover{border-color:var(--ember)}
+.quick button:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line)}
+.toast{
+  position:fixed;right:24px;bottom:22px;background:#28241f;border:1px solid var(--line);
+  color:var(--text);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s;z-index:20;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:1080px){
+  body{overflow:auto}
+  .shell{height:auto;min-height:100%;grid-template-rows:auto auto}
+  .top{flex-wrap:wrap}
+  .tabs{order:3;width:100%;overflow:auto}
+  .tab{min-width:116px}
+  .workspace{height:calc(100vh - 150px);grid-template-columns:1fr}
+  .side{display:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">L</div>
+      <div>
+        <h1>Llama Progress Portal</h1>
+        <p>Normal portal: monthly timed upgrades</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="AI progression"></nav>
+    <div class="tools">
+      <button class="tool-btn" onclick="openCurrentInNewTab()">Open current</button>
+      <button class="tool-btn primary" onclick="loadBestUnlocked()">Best unlocked</button>
+    </div>
+  </header>
+
+  <section class="workspace">
+    <main class="frame-wrap">
+      <div class="frame-head">
+        <div class="pulse" aria-hidden="true"></div>
+        <div class="frame-title" id="frameTitle">Running Llama AI</div>
+      </div>
+      <iframe id="aiFrame" title="Llama AI" src="LlamaAI.html" loading="eager"></iframe>
+    </main>
+
+    <aside class="side">
+      <div class="card">
+        <div class="label">This month's active use</div>
+        <div class="time" id="usageTime">0s</div>
+        <p class="sub" id="monthText">Progress resets monthly.</p>
+        <div class="bar"><span id="progressBar"></span></div>
+        <p class="sub" id="nextText">Nexus unlocks after 30 active minutes.</p>
+      </div>
+      <div class="card">
+        <div class="label">Upgrade path</div>
+        <div class="tier-list" id="tierList"></div>
+      </div>
+      <div class="card hint">
+        <h2>Normal portal rules</h2>
+        <p>Llama is available immediately. Nexus unlocks at 30 active minutes this month. Boundless unlocks at 60 active minutes this month. Locked AIs cannot be opened from this portal.</p>
+      </div>
+      <div class="card hint">
+        <h2>Groq key setup</h2>
+        <ol>
+          <li>Visit <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.</li>
+          <li>Create and copy an API key.</li>
+          <li>Open Settings inside the AI, paste the key, then save it.</li>
+        </ol>
+      </div>
+      <div class="quick">
+        <button onclick="reloadFrame()">Reload AI</button>
+        <button onclick="resetProgress()">Reset month</button>
+      </div>
+    </aside>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const AI_APPS = [
+  { id:'llama', name:'Llama AI', short:'Llama', file:'LlamaAI.html', threshold:0 },
+  { id:'nexus', name:'Nexus AI', short:'Nexus', file:'NexusAI-3-fixed-v4.html', threshold:30 * 60 * 1000 },
+  { id:'boundless', name:'Boundless AI', short:'Boundless', file:'BoundlessAI.html', threshold:60 * 60 * 1000 }
+];
+const STORE = {
+  total:'llama_progress_portal_active_ms',
+  selected:'llama_progress_portal_selected_app',
+  month:'llama_progress_portal_month'
+};
+let activeMs = 0;
+let selectedId = 'llama';
+let lastInteraction = Date.now();
+let toastTimer = null;
+
+function monthKey(date = new Date()){
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}`;
+}
+function resetIfNewMonth(){
+  const current = monthKey();
+  const saved = localStorage.getItem(STORE.month);
+  if(saved !== current){
+    localStorage.setItem(STORE.month, current);
+    localStorage.setItem(STORE.total, '0');
+    localStorage.setItem(STORE.selected, 'llama');
+  }
+  activeMs = Number(localStorage.getItem(STORE.total) || 0);
+  selectedId = localStorage.getItem(STORE.selected) || 'llama';
+}
+function formatTime(ms){
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if(h) return `${h}h ${m}m`;
+  if(m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function appById(id){ return AI_APPS.find(app => app.id === id) || AI_APPS[0]; }
+function isUnlocked(app){ return activeMs >= app.threshold; }
+function unlockedApps(){ return AI_APPS.filter(isUnlocked); }
+function currentTier(){ return unlockedApps().at(-1) || AI_APPS[0]; }
+function nextTier(){ return AI_APPS.find(app => !isUnlocked(app)) || null; }
+function nextMonthLabel(){
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1).toLocaleDateString(undefined, { month:'long', day:'numeric' });
+}
+function progressToNext(){
+  const current = currentTier();
+  const next = nextTier();
+  if(!next) return 100;
+  const span = next.threshold - current.threshold;
+  const done = activeMs - current.threshold;
+  return Math.max(0, Math.min(100, (done / span) * 100));
+}
+function markInteraction(){ lastInteraction = Date.now(); }
+function isUserActive(){
+  return document.visibilityState === 'visible' && Date.now() - lastInteraction < 90 * 1000;
+}
+function tick(){
+  resetIfNewMonth();
+  if(isUserActive()){
+    activeMs += 1000;
+    localStorage.setItem(STORE.total, String(activeMs));
+    const selected = appById(selectedId);
+    if(!isUnlocked(selected)){
+      selectedId = currentTier().id;
+      localStorage.setItem(STORE.selected, selectedId);
+      setFrame(appById(selectedId), false);
+    }
+    render();
+  }
+}
+['pointerdown','mousemove','keydown','scroll','touchstart'].forEach(evt => window.addEventListener(evt, markInteraction, { passive:true }));
+setInterval(tick, 1000);
+
+function render(){
+  const selected = appById(selectedId);
+  const best = currentTier();
+  const next = nextTier();
+  document.getElementById('usageTime').textContent = formatTime(activeMs);
+  document.getElementById('monthText').textContent = `Progress resets on ${nextMonthLabel()}.`;
+  document.getElementById('nextText').textContent = next
+    ? `${next.name} unlocks in ${formatTime(next.threshold - activeMs)}.`
+    : 'All assistants are unlocked until the monthly reset.';
+  document.getElementById('progressBar').style.width = `${progressToNext()}%`;
+
+  document.getElementById('tabs').innerHTML = AI_APPS.map(app => {
+    const unlocked = isUnlocked(app);
+    const cls = `${selected.id === app.id ? 'active ' : ''}${unlocked ? 'unlocked' : 'locked'}`;
+    const label = unlocked ? app.short : `${app.short} <span class="lock">locked</span>`;
+    return `<button class="tab ${cls}" onclick="selectApp('${app.id}')" aria-disabled="${unlocked ? 'false' : 'true'}">${label}</button>`;
+  }).join('');
+
+  document.getElementById('tierList').innerHTML = AI_APPS.map(app => {
+    const state = isUnlocked(app) ? 'unlocked' : 'locked';
+    const current = best.id === app.id ? ' current' : '';
+    const meta = isUnlocked(app) ? 'Unlocked this month' : `Unlocks at ${formatTime(app.threshold)}`;
+    return `<div class="tier ${state}${current}">
+      <div class="status"></div>
+      <div>
+        <div class="tier-name">${escapeHtml(app.name)}</div>
+        <div class="tier-meta">${escapeHtml(meta)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function selectApp(id){
+  const app = appById(id);
+  if(!isUnlocked(app)){
+    showToast(`${app.name} is locked for ${formatTime(app.threshold - activeMs)} more this month.`);
+    return;
+  }
+  selectedId = app.id;
+  localStorage.setItem(STORE.selected, selectedId);
+  setFrame(app, true);
+  render();
+}
+function setFrame(app, announce){
+  const frame = document.getElementById('aiFrame');
+  const title = document.getElementById('frameTitle');
+  if(frame.getAttribute('src') !== app.file) frame.setAttribute('src', app.file);
+  frame.setAttribute('title', app.name);
+  title.textContent = `Running ${app.name}`;
+  if(announce) showToast(`${app.name} loaded.`);
+}
+function loadBestUnlocked(){
+  selectApp(currentTier().id);
+}
+function openCurrentInNewTab(){
+  const app = appById(selectedId);
+  if(!isUnlocked(app)){
+    showToast(`${app.name} is locked.`);
+    return;
+  }
+  window.open(app.file, '_blank', 'noopener');
+}
+function reloadFrame(){
+  const frame = document.getElementById('aiFrame');
+  frame.setAttribute('src', frame.getAttribute('src'));
+  showToast('AI reloaded.');
+}
+function resetProgress(){
+  if(!confirm('Reset this month\\'s normal portal progress?')) return;
+  activeMs = 0;
+  selectedId = 'llama';
+  localStorage.setItem(STORE.month, monthKey());
+  localStorage.setItem(STORE.total, '0');
+  localStorage.setItem(STORE.selected, selectedId);
+  setFrame(AI_APPS[0], false);
+  render();
+  showToast('Monthly progress reset.');
+}
+function showToast(message){
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+resetIfNewMonth();
+if(!isUnlocked(appById(selectedId))) selectedId = currentTier().id;
+setFrame(appById(selectedId), false);
+render();
+</script>
+</body>
+</html>

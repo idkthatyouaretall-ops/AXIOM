@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LlamaAI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--chat-bg:#0a0a0f;--sidebar:#111118;--surface:#1a1a24;--surface2:#22222e;--border:#2a2a38;--accent:#7c6af7;--accent2:#a78bfa;--text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;--green:#4ade80;--red:#f87171;--amber:#fbbf24;--code-bg:#0d0d15;--radius:12px;--font:'Inter',system-ui,sans-serif}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--chat-bg);color:var(--text);display:flex}
+.sidebar{width:240px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px 14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c6af7,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:14px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.new-chat-btn{margin:10px 10px 6px;padding:9px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:opacity 0.15s}
+.new-chat-btn:hover{opacity:0.85}
+.sidebar-tabs{display:flex;margin:0 10px 6px;gap:4px}
+.s-tab{flex:1;padding:6px 4px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:11px;cursor:pointer;transition:all 0.15s;text-align:center}
+.s-tab.active{background:var(--surface2);border-color:var(--accent);color:var(--accent2)}
+.chat-list,.memory-list{flex:1;overflow-y:auto;padding:6px}
+.memory-list{display:none}
+.chat-item{padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2);transition:all 0.15s;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.chat-item:hover{background:var(--surface);color:var(--text)}
+.chat-item.active{background:var(--surface2);color:var(--text)}
+.chat-item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-del{background:none;border:none;color:transparent;cursor:pointer;font-size:14px;padding:0 2px;transition:color 0.15s;flex-shrink:0}
+.chat-item:hover .chat-del{color:var(--text3)}
+.chat-del:hover{color:var(--red)!important}
+.memory-item{padding:9px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);margin-bottom:6px;font-size:12px;color:var(--text2);line-height:1.5;position:relative}
+.memory-item strong{display:block;font-size:10px;color:var(--accent2);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px}
+.memory-del{position:absolute;top:7px;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0;line-height:1;transition:color 0.15s}
+.memory-del:hover{color:var(--red)}
+.no-memory{padding:16px 10px;text-align:center;font-size:12px;color:var(--text3);line-height:1.7}
+.sidebar-footer{padding:10px;border-top:1px solid var(--border)}
+.model-badge{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--surface);border-radius:8px;font-size:11px}
+.model-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--chat-bg);position:relative;height:100vh}
+.topbar{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}
+.topbar-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.icon-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.15s}
+.icon-btn:hover{background:var(--surface);color:var(--text);border-color:var(--accent)}
+.memory-indicator{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--accent2);padding:3px 8px;background:rgba(124,106,247,0.12);border:1px solid rgba(124,106,247,0.25);border-radius:20px}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:10px;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.avatar.ai{background:linear-gradient(135deg,#7c6af7,#a78bfa);color:#fff}
+.avatar.user{background:var(--surface2);color:var(--text2);font-size:11px}
+.bubble{max-width:74%;padding:11px 14px;border-radius:var(--radius);font-size:13.5px;line-height:1.65;word-break:break-word}
+.msg.ai .bubble{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.msg.user .bubble{background:var(--accent);color:#fff}
+.msg.ai .bubble pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin:9px 0;overflow-x:auto;font-size:12.5px;font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.5}
+.msg.ai .bubble code:not(pre code){background:var(--code-bg);padding:2px 5px;border-radius:4px;font-size:12.5px;font-family:monospace;color:var(--accent2)}
+.img-result{max-width:100%;border-radius:8px;margin-top:8px;border:1px solid var(--border);display:block}
+.typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1}}
+.input-area{padding:12px 16px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.input-row{display:flex;gap:7px;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;transition:border-color 0.15s}
+.input-row:focus-within{border-color:var(--accent)}
+.attach-btn{width:30px;height:30px;flex-shrink:0;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all 0.15s}
+.attach-btn:hover{background:var(--surface2);color:var(--accent)}
+#prompt{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13.5px;font-family:var(--font);resize:none;max-height:130px;line-height:1.6;padding:0}
+#prompt::placeholder{color:var(--text3)}
+.send-btn{width:32px;height:32px;flex-shrink:0;background:var(--accent);border:none;border-radius:7px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.15s}
+.send-btn:hover{opacity:0.85}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed}
+.tools-row{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+.tool-chip{padding:4px 9px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:11.5px;color:var(--text2);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tool-chip:hover{border-color:var(--accent);color:var(--accent)}
+.tool-chip.active{background:rgba(124,106,247,0.15);border-color:var(--accent);color:var(--accent2)}
+.file-attachments{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.file-tag{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(124,106,247,0.15);border:1px solid var(--accent);border-radius:20px;font-size:11.5px;color:var(--accent2)}
+.file-tag button{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:13px;line-height:1;padding:0}
+.hidden{display:none!important}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;padding:32px 20px;text-align:center}
+.welcome h2{font-size:22px;font-weight:600;background:linear-gradient(135deg,#f0f0f5,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{font-size:13px;color:var(--text2);max-width:420px;line-height:1.7}
+.suggestions{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;max-width:480px;margin-top:6px}
+.sug-card{padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;font-size:12.5px;color:var(--text2);cursor:pointer;text-align:left;transition:all 0.15s;line-height:1.45}
+.sug-card:hover{border-color:var(--accent);color:var(--text)}
+.sug-card strong{display:block;color:var(--text);font-size:11px;margin-bottom:2px}
+.msg-meta{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:var(--text3)}
+.copy-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:1px 4px;border-radius:4px;transition:all 0.15s}
+.copy-btn:hover{color:var(--accent2)}
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.settings-overlay.open{display:flex}
+.settings-modal{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:340px;max-height:90vh;overflow-y:auto}
+.settings-modal h2{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text)}
+.setting-row{margin-bottom:14px}
+.setting-label{font-size:11.5px;color:var(--text2);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.setting-label span{color:var(--accent2);font-weight:500}
+.setting-row select,.setting-row input[type=range]{width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12.5px;padding:6px 9px;outline:none}
+.setting-row select option{background:var(--surface2)}
+.setting-row input[type=range]{padding:4px;cursor:pointer;accent-color:var(--accent)}
+.setting-row input[type=password],.setting-row input[type=text]{width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;padding:6px 9px;outline:none;font-family:monospace}
+.setting-row input:focus,.setting-row select:focus{border-color:var(--accent)}
+.setting-row textarea{width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;padding:7px;outline:none;resize:vertical;min-height:70px;font-family:var(--font)}
+.setting-row textarea:focus{border-color:var(--accent)}
+.save-key-btn,.modal-close-btn{width:100%;padding:8px;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;margin-top:4px}
+.save-key-btn{background:var(--accent);color:#fff}
+.save-key-btn:hover{opacity:0.85}
+.modal-close-btn{background:var(--surface);color:var(--text2);border:1px solid var(--border);margin-top:8px}
+.modal-close-btn:hover{background:var(--surface2)}
+.key-status{font-size:11px;margin-top:4px}
+.key-status.ok{color:var(--green)}
+.key-status.err{color:var(--red)}
+.memory-toast{position:fixed;bottom:24px;right:24px;background:rgba(124,106,247,0.92);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:300}
+.memory-toast.show{opacity:1}
+.img-loading{padding:10px;background:var(--code-bg);border-radius:8px;color:var(--text2);font-size:13px;display:flex;align-items:center;gap:8px}
+.img-loading .spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.divider{border:none;border-top:1px solid var(--border);margin:10px 0 14px}
+.danger-btn{width:100%;padding:7px;background:transparent;border:1px solid var(--red);border-radius:7px;color:var(--red);font-size:12px;cursor:pointer;transition:all 0.15s}
+.danger-btn:hover{background:rgba(248,113,113,0.1)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">🦙</div>
+    <div>
+      <div class="logo-text">LlamaAI</div>
+      <div class="logo-sub">Groq · Memory enabled</div>
+    </div>
+  </div>
+  <button class="new-chat-btn" onclick="newChat()">
+    <span style="font-size:16px">+</span> New chat
+  </button>
+  <div class="sidebar-tabs">
+    <button class="s-tab active" id="tab-chats" onclick="switchTab('chats')">💬 Chats</button>
+    <button class="s-tab" id="tab-memory" onclick="switchTab('memory')">🧠 Memory</button>
+  </div>
+  <div class="chat-list" id="chatList"></div>
+  <div class="memory-list" id="memoryList"></div>
+  <div class="sidebar-footer">
+    <div class="model-badge">
+      <div class="model-dot"></div>
+      <div style="flex:1">
+        <div style="font-size:11.5px;color:var(--text)" id="modelBadgeLabel">Llama 3.3 70B</div>
+        <div style="font-size:10px;color:var(--text3)" id="memCountLabel">0 memories stored</div>
+      </div>
+      <button class="icon-btn" onclick="toggleSettings()" title="Settings" style="margin-left:4px">⚙</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="chatTitle">New chat</span>
+    <div class="topbar-actions">
+      <div class="memory-indicator" id="memIndicator" style="display:none">🧠 <span id="memCount">0</span> active</div>
+    </div>
+  </div>
+
+  <div id="welcomeScreen" class="welcome">
+    <div style="font-size:44px">🦙</div>
+    <h2>What can I help with?</h2>
+    <p>I remember things you tell me across all conversations — names, preferences, projects, anything.</p>
+    <div class="suggestions">
+      <button class="sug-card" onclick="suggest('My name is Neil and I love building DIY tech projects')"><strong>🧠 Introduce yourself</strong>Tell me your name and interests</button>
+      <button class="sug-card" onclick="suggest('Write a Python function to scrape a webpage')"><strong>💻 Code</strong>Write a Python web scraper</button>
+      <button class="sug-card" onclick="suggest('Generate image: a neon holographic display floating in a dark futuristic room')"><strong>🎨 Image</strong>Generate a holographic display</button>
+      <button class="sug-card" onclick="suggest('What do you remember about me?')"><strong>🧠 Memory</strong>What do you remember about me?</button>
+    </div>
+  </div>
+
+  <div id="messagesArea" class="messages hidden"></div>
+
+  <div class="memory-toast" id="memToast">🧠 Memory saved</div>
+
+  <div class="input-area">
+    <div id="fileAttachments" class="file-attachments"></div>
+    <div class="tools-row">
+      <button class="tool-chip" onclick="document.getElementById('fileInput').click()">📎 Attach file</button>
+      <button class="tool-chip" id="chip-img" onclick="activateImageMode()">🎨 Generate image</button>
+      <button class="tool-chip active" id="chip-mem" onclick="toggleMemoryMode()">🧠 Memory on</button>
+      <button class="tool-chip" id="chip-search" onclick="toggleWebSearch()">🔍 Web search off</button>
+    </div>
+    <input type="file" id="fileInput" class="hidden" multiple
+      accept=".txt,.pdf,.csv,.json,.md,.js,.py,.html,.css,.ts,.jsx,.tsx,.png,.jpg,.jpeg,.gif,.webp"
+      onchange="handleFiles(this.files)">
+    <div class="input-row">
+      <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">📎</button>
+      <textarea id="prompt" rows="1" placeholder="Message LlamaAI..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+    </div>
+    <div style="text-align:center;margin-top:7px;font-size:10.5px;color:var(--text3)">
+      LlamaAI · Llama 3.3 70B via Groq · Memory enabled · Images via Pollinations
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-overlay" id="settingsOverlay" onclick="overlayClick(event)">
+  <div class="settings-modal">
+    <h2>⚙ Settings</h2>
+
+    <div class="setting-row">
+      <div class="setting-label">Groq API key</div>
+      <input type="password" id="apiKeyInput" placeholder="gsk_..." />
+      <div class="key-status" id="keyStatus"></div>
+      <button class="save-key-btn" onclick="saveKey()">Save key</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="setting-row">
+      <div class="setting-label">Model <span id="modelLabel">Llama 3.3 70B</span></div>
+      <select id="modelSelect" onchange="updateModel()">
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Best quality)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B (Fastest)</option>
+        <option value="llama3-70b-8192">Llama 3 70B</option>
+        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+      </select>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Temperature <span id="tempLabel">0.7</span></div>
+      <input type="range" id="tempSlider" min="0" max="1" step="0.1" value="0.7"
+        oninput="document.getElementById('tempLabel').textContent=this.value">
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">System prompt</div>
+      <textarea id="systemPrompt">You are a helpful, intelligent AI assistant. You give clear, accurate, and thoughtful responses. You can help with coding, writing, analysis, creative tasks, and general questions.</textarea>
+    </div>
+
+    <hr class="divider">
+
+    <div class="setting-row">
+      <div class="setting-label" style="margin-bottom:8px">Memory</div>
+      <div style="font-size:11.5px;color:var(--text2);margin-bottom:10px;line-height:1.6">
+        The AI automatically extracts and remembers facts about you across all conversations.
+        Switch to the 🧠 Memory tab in the sidebar to view stored memories.
+      </div>
+      <button class="danger-btn" onclick="clearAllMemory()">🗑 Clear all memories</button>
+    </div>
+
+    <button class="modal-close-btn" onclick="toggleSettings()">Close</button>
+  </div>
+</div>
+
+<script>
+let apiKey = localStorage.getItem('groq_key') || '';
+let model = 'llama-3.3-70b-versatile';
+let chats = JSON.parse(localStorage.getItem('llamaai_chats') || '[]');
+let memories = JSON.parse(localStorage.getItem('llamaai_memories') || '[]');
+let currentChat = null;
+let imageMode = false;
+let memoryMode = true;
+let webSearchMode = false;
+let attachedFiles = [];
+
+function init() {
+  if (apiKey) {
+    document.getElementById('apiKeyInput').value = '••••••••' + apiKey.slice(-4);
+    document.getElementById('keyStatus').textContent = '✓ Key saved';
+    document.getElementById('keyStatus').className = 'key-status ok';
+  }
+  updateMemoryUI();
+  renderChatList();
+}
+
+function saveKey() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k || k.startsWith('••')) {
+    document.getElementById('keyStatus').textContent = '✗ Enter a new key to save';
+    document.getElementById('keyStatus').className = 'key-status err';
+    return;
+  }
+  apiKey = k;
+  localStorage.setItem('groq_key', k);
+  document.getElementById('keyStatus').textContent = '✓ Key saved';
+  document.getElementById('keyStatus').className = 'key-status ok';
+  document.getElementById('apiKeyInput').value = '••••••••' + k.slice(-4);
+}
+
+function updateModel() {
+  model = document.getElementById('modelSelect').value;
+  const labels = {
+    'llama-3.3-70b-versatile': 'Llama 3.3 70B',
+    'llama-3.1-8b-instant': 'Llama 3.1 8B',
+    'llama3-70b-8192': 'Llama 3 70B',
+    'mixtral-8x7b-32768': 'Mixtral 8x7B'
+  };
+  const label = labels[model] || model;
+  document.getElementById('modelLabel').textContent = label;
+  document.getElementById('modelBadgeLabel').textContent = label;
+}
+
+function toggleSettings() {
+  document.getElementById('settingsOverlay').classList.toggle('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('settingsOverlay')) toggleSettings();
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-chats').classList.toggle('active', tab === 'chats');
+  document.getElementById('tab-memory').classList.toggle('active', tab === 'memory');
+  document.getElementById('chatList').style.display = tab === 'chats' ? 'block' : 'none';
+  document.getElementById('memoryList').style.display = tab === 'memory' ? 'block' : 'none';
+  if (tab === 'memory') renderMemoryList();
+}
+
+function updateMemoryUI() {
+  const count = memories.length;
+  document.getElementById('memCountLabel').textContent = count + (count === 1 ? ' memory stored' : ' memories stored');
+  const ind = document.getElementById('memIndicator');
+  if (count > 0 && memoryMode) {
+    ind.style.display = 'flex';
+    document.getElementById('memCount').textContent = count;
+  } else {
+    ind.style.display = 'none';
+  }
+}
+
+function renderMemoryList() {
+  const el = document.getElementById('memoryList');
+  if (memories.length === 0) {
+    el.innerHTML = '<div class="no-memory">🧠<br>No memories yet.<br>Chat with me and I\'ll start<br>remembering things about you.</div>';
+    return;
+  }
+  el.innerHTML = memories.map((m, i) => `
+    <div class="memory-item">
+      <strong>${escHtml(m.category || 'General')}</strong>
+      ${escHtml(m.fact)}
+      <button class="memory-del" onclick="deleteMemory(${i})" title="Delete">×</button>
+    </div>
+  `).join('');
+}
+
+function deleteMemory(i) {
+  memories.splice(i, 1);
+  localStorage.setItem('llamaai_memories', JSON.stringify(memories));
+  updateMemoryUI();
+  renderMemoryList();
+}
+
+function clearAllMemory() {
+  if (!confirm('Clear all memories? This cannot be undone.')) return;
+  memories = [];
+  localStorage.setItem('llamaai_memories', JSON.stringify(memories));
+  updateMemoryUI();
+  renderMemoryList();
+  toggleSettings();
+}
+
+function toggleMemoryMode() {
+  memoryMode = !memoryMode;
+  const chip = document.getElementById('chip-mem');
+  chip.classList.toggle('active', memoryMode);
+  chip.textContent = memoryMode ? '🧠 Memory on' : '🧠 Memory off';
+  updateMemoryUI();
+}
+
+function toggleWebSearch() {
+  webSearchMode = !webSearchMode;
+  const chip = document.getElementById('chip-search');
+  chip.classList.toggle('active', webSearchMode);
+  chip.textContent = webSearchMode ? '🔍 Web search on' : '🔍 Web search off';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('memToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function buildMemoryContext() {
+  if (!memoryMode || memories.length === 0) return '';
+  return `\n\n[MEMORY ABOUT THE USER - use naturally, don't announce it]\n${memories.map(m => `- [${m.category}] ${m.fact}`).join('\n')}`;
+}
+
+function buildWebSearchPrompt(userMsg) {
+  if (!webSearchMode) return '';
+  return `\n\n[Note: The user has web search mode enabled. If the question requires current or real-time information, clearly state that you don't have live internet access but provide the best answer from your training data. Suggest they verify time-sensitive facts.]`;
+}
+
+async function extractMemories(userMsg, aiReply) {
+  if (!memoryMode || !apiKey) return;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        max_tokens: 300,
+        temperature: 0.1,
+        messages: [{
+          role: 'user',
+          content: `Extract ONLY concrete, reusable personal facts about the USER from this exchange. Return a JSON array or empty array []. Format: [{"fact":"...","category":"Name|Job|Location|Preference|Project|Skill|Pet|Family|Other"}]. Only facts clearly stated by the user. No inferences. No AI responses.\n\nUser: "${userMsg}"\nAI: "${aiReply.substring(0, 300)}"\n\nReturn JSON only:`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '[]';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const extracted = JSON.parse(clean);
+    if (Array.isArray(extracted) && extracted.length > 0) {
+      let added = 0;
+      for (const item of extracted) {
+        if (!item.fact || item.fact.length < 4) continue;
+        const isDupe = memories.some(m => m.fact.toLowerCase() === item.fact.toLowerCase());
+        if (!isDupe) {
+          memories.push({ fact: item.fact, category: item.category || 'General', ts: Date.now() });
+          added++;
+        }
+      }
+      if (added > 0) {
+        localStorage.setItem('llamaai_memories', JSON.stringify(memories));
+        updateMemoryUI();
+        showToast(`🧠 ${added} memory${added > 1 ? ' updates' : ''} saved`);
+      }
+    }
+  } catch (e) { /* silent fail */ }
+}
+
+function newChat() {
+  currentChat = { id: Date.now(), title: 'New chat', messages: [] };
+  chats.unshift(currentChat);
+  saveChats();
+  renderChatList();
+  showChat();
+}
+
+function loadChat(id) {
+  currentChat = chats.find(c => c.id === id);
+  if (currentChat) { renderChatList(); showChat(); }
+}
+
+function deleteChat(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this chat?')) return;
+  chats = chats.filter(c => c.id !== id);
+  saveChats();
+  if (currentChat && currentChat.id === id) {
+    currentChat = null;
+    document.getElementById('messagesArea').classList.add('hidden');
+    document.getElementById('welcomeScreen').classList.remove('hidden');
+    document.getElementById('chatTitle').textContent = 'New chat';
+  }
+  renderChatList();
+}
+
+function showChat() {
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  const area = document.getElementById('messagesArea');
+  area.classList.remove('hidden');
+  area.innerHTML = '';
+  if (currentChat) {
+    document.getElementById('chatTitle').textContent = currentChat.title;
+    currentChat.messages.forEach(m => renderMessage(m.role, m.content, m.type, false));
+  }
+  area.scrollTop = area.scrollHeight;
+  updateMemoryUI();
+}
+
+function renderChatList() {
+  const el = document.getElementById('chatList');
+  el.innerHTML = chats.length === 0
+    ? '<div style="padding:12px 10px;font-size:12px;color:var(--text3)">No chats yet. Start one!</div>'
+    : chats.map(c => `
+      <div class="chat-item${currentChat && currentChat.id === c.id ? ' active' : ''}" onclick="loadChat(${c.id})">
+        <span class="chat-item-title">${escHtml(c.title)}</span>
+        <button class="chat-del" onclick="deleteChat(${c.id}, event)" title="Delete">×</button>
+      </div>`).join('');
+}
+
+function saveChats() {
+  localStorage.setItem('llamaai_chats', JSON.stringify(chats.slice(0, 80)));
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function suggest(text) {
+  if (!currentChat) newChat();
+  document.getElementById('prompt').value = text;
+  sendMessage();
+}
+
+function activateImageMode() {
+  imageMode = !imageMode;
+  const chip = document.getElementById('chip-img');
+  chip.classList.toggle('active', imageMode);
+  document.getElementById('prompt').placeholder = imageMode ? 'Describe the image to generate...' : 'Message LlamaAI...';
+}
+
+async function handleFiles(files) {
+  for (const file of files) {
+    if (attachedFiles.find(f => f.name === file.name)) continue;
+    const content = await readFile(file);
+    attachedFiles.push({ name: file.name, content, type: file.type });
+    renderAttachments();
+  }
+  document.getElementById('fileInput').value = '';
+}
+
+function readFile(file) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = () => resolve(`[Could not read ${file.name}]`);
+    if (file.type.startsWith('image/')) {
+      r.readAsDataURL(file);
+    } else {
+      r.readAsText(file);
+    }
+  });
+}
+
+function renderAttachments() {
+  const el = document.getElementById('fileAttachments');
+  el.innerHTML = attachedFiles.map((f, i) => `
+    <div class="file-tag">📄 ${escHtml(f.name)}<button onclick="removeFile(${i})">×</button></div>
+  `).join('');
+}
+
+function removeFile(i) { attachedFiles.splice(i, 1); renderAttachments(); }
+
+function renderMessage(role, content, type, scroll = true) {
+  const area = document.getElementById('messagesArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let bubbleContent = '';
+  if (type === 'image') {
+    bubbleContent = `<img class="img-result" src="${escHtml(content)}" alt="Generated image" loading="lazy">`;
+  } else if (type === 'image-loading') {
+    bubbleContent = `<div class="img-loading"><div class="spin"></div> Generating image…</div>`;
+  } else {
+    bubbleContent = formatContent(content);
+  }
+  if (role === 'ai') {
+    const id = 'msg-' + Date.now() + Math.random().toString(36).slice(2);
+    div.innerHTML = `
+      <div class="avatar ai">🦙</div>
+      <div>
+        <div class="bubble" id="${id}">${bubbleContent}</div>
+        <div class="msg-meta">
+          <span>${time}</span>
+          <button class="copy-btn" onclick="copyMsg('${id}')">copy</button>
+        </div>
+      </div>`;
+  } else {
+    div.innerHTML = `
+      <div>
+        <div class="bubble">${bubbleContent}</div>
+        <div class="msg-meta" style="justify-content:flex-end"><span>${time}</span></div>
+      </div>
+      <div class="avatar user">U</div>`;
+  }
+  area.appendChild(div);
+  if (scroll) area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function formatContent(text) {
+  let h = escHtml(text);
+  h = h.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) =>
+    `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`);
+  h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  h = h.replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:600;margin:10px 0 4px;color:var(--accent2)">$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2 style="font-size:15px;font-weight:600;margin:11px 0 4px;color:var(--accent2)">$1</h2>');
+  h = h.replace(/^# (.+)$/gm, '<h1 style="font-size:17px;font-weight:600;margin:12px 0 5px;color:var(--accent2)">$1</h1>');
+  h = h.replace(/^[-•*] (.+)$/gm, '<div style="padding:2px 0 2px 14px;border-left:2px solid var(--border);margin:2px 0">$1</div>');
+  h = h.replace(/\n/g, '<br>');
+  return h;
+}
+
+function copyMsg(id) {
+  const el = document.getElementById(id);
+  if (el) navigator.clipboard.writeText(el.innerText).catch(() => {});
+}
+
+async function sendMessage() {
+  const promptEl = document.getElementById('prompt');
+  const text = promptEl.value.trim();
+  if (!text && attachedFiles.length === 0) return;
+  if (!apiKey) { toggleSettings(); return; }
+  if (!currentChat) newChat();
+
+  const fileContext = attachedFiles.length > 0
+    ? '\n\n' + attachedFiles.map(f =>
+        `📄 **File: ${f.name}**\n\`\`\`\n${f.content.substring(0, 5000)}\n\`\`\``
+      ).join('\n\n')
+    : '';
+  const fullText = text + fileContext;
+
+  promptEl.value = '';
+  promptEl.style.height = 'auto';
+  attachedFiles = [];
+  renderAttachments();
+
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  document.getElementById('messagesArea').classList.remove('hidden');
+
+  if (currentChat.title === 'New chat' && text) {
+    currentChat.title = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+    document.getElementById('chatTitle').textContent = currentChat.title;
+  }
+
+  currentChat.messages.push({ role: 'user', content: fullText });
+  renderMessage('user', fullText);
+  saveChats();
+  renderChatList();
+  document.getElementById('sendBtn').disabled = true;
+
+  if (imageMode) {
+    await generateImage(text);
+    document.getElementById('sendBtn').disabled = false;
+    return;
+  }
+
+  const typingDiv = renderMessage('ai', '', 'typing');
+  typingDiv.querySelector('.bubble').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+  try {
+    const sysPrompt = document.getElementById('systemPrompt').value.trim() || 'You are a helpful AI assistant.';
+    const temp = parseFloat(document.getElementById('tempSlider').value);
+    const memCtx = buildMemoryContext();
+    const searchCtx = buildWebSearchPrompt(text);
+    const msgs = currentChat.messages.map(m => ({
+      role: m.role === 'ai' ? 'assistant' : 'user',
+      content: m.content
+    }));
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: sysPrompt + memCtx + searchCtx }, ...msgs],
+        temperature: temp,
+        max_tokens: 4096
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || 'No response received.';
+
+    typingDiv.querySelector('.bubble').innerHTML = formatContent(reply);
+    document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+
+    currentChat.messages.push({ role: 'ai', content: reply });
+    saveChats();
+
+    extractMemories(text, reply);
+
+  } catch (err) {
+    typingDiv.querySelector('.bubble').innerHTML =
+      `<span style="color:var(--red)">⚠ ${escHtml(err.message)}</span>`;
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+async function generateImage(prompt) {
+  const area = document.getElementById('messagesArea');
+  const loadDiv = renderMessage('ai', '', 'image-loading');
+  try {
+    const seed = Math.floor(Math.random() * 99999);
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&seed=${seed}&nologo=true`;
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+    loadDiv.querySelector('.bubble').innerHTML =
+      `<div style="font-size:12px;color:var(--text2);margin-bottom:7px">🎨 "${escHtml(prompt)}"</div>` +
+      `<img class="img-result" src="${url}" alt="${escHtml(prompt)}">`;
+    currentChat.messages.push({ role: 'ai', content: url, type: 'image' });
+    saveChats();
+  } catch (e) {
+    loadDiv.querySelector('.bubble').innerHTML =
+      `<span style="color:var(--red)">⚠ Image generation failed. Please try again.</span>`;
+  }
+  area.scrollTop = area.scrollHeight;
+}
+
+init();
+</script>
+</body>
+</html>
